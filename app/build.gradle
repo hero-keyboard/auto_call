@@ -1,0 +1,80 @@
+import com.keyboardhero.call.Libs
+
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-kapt'
+    id 'dagger.hilt.android.plugin'
+    id 'kotlin-parcelize'
+    id 'androidx.navigation.safeargs.kotlin'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.4.10'
+}
+
+android {
+    defaultConfig {
+        applicationId "com.keyboardhero.call"
+        versionCode 1
+        versionName "0.1.12"
+        setProperty("archivesBaseName", "auto-call-$versionName")
+    }
+
+    buildTypes {
+        release {
+            debuggable false
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+            shrinkResources false
+            minifyEnabled false
+        }
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation Libs.Kotlin.STD_LIB
+    implementation Libs.Kotlin.SERIALIZATION_JSON
+
+    implementation Libs.AndroidX.APPCOMPAT
+    implementation Libs.AndroidX.ACTIVITY_KOTLIN_EXTENSION
+    implementation Libs.AndroidX.CORE_KOTLIN_EXTENSION
+    implementation Libs.AndroidX.CONSTRAINT_LAYOUT
+    implementation Libs.AndroidX.CRYPTO
+    implementation Libs.AndroidX.LEGACY_SUPPORT_V4
+    implementation Libs.AndroidX.RECYCLER_VIEW
+
+    implementation Libs.AndroidX.Lifecycle.RUNTIME
+    implementation Libs.AndroidX.Lifecycle.VIEWMODEL_KTX
+    implementation Libs.AndroidX.Lifecycle.LIVEDATA_KTX
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'com.google.firebase:firebase-common-ktx:20.3.2'
+    implementation 'com.google.firebase:firebase-database-ktx:20.2.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+    kapt Libs.AndroidX.Lifecycle.COMPILER
+
+    implementation Libs.AndroidX.Room.RUNTIME
+    implementation Libs.AndroidX.Room.KTX
+    kapt Libs.AndroidX.Room.COMPILER
+
+    implementation Libs.AndroidX.Navigation.UI_KTX
+    implementation Libs.AndroidX.Navigation.FRAGMENT_KTX
+
+    implementation Libs.Coroutines.CORE
+    implementation Libs.Coroutines.ANDROID
+
+    implementation Libs.DI.HILT
+    kapt Libs.DI.COMPILER
+
+    implementation Libs.Network.RETROFIT
+    implementation Libs.Network.RETROFIT_CONVERTER
+    implementation Libs.Network.LOGGING
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation "com.google.android.material:material:1.3.0-alpha02"
+    implementation "androidx.work:work-runtime-ktx:2.7.0"
+}
