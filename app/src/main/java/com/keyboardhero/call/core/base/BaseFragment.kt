@@ -4,15 +4,23 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Looper
+import android.os.PowerManager
 import android.provider.CallLog
+import android.telecom.TelecomManager
+import android.telephony.SmsManager
+import android.telephony.TelephonyManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.activity.OnBackPressedDispatcherOwner
 import androidx.activity.addCallback
 import androidx.activity.result.IntentSenderRequest
@@ -41,7 +49,7 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment(), IBaseFragment {
 
     private lateinit var baseBinding: FragmentBaseBinding
 
-    protected lateinit var locationManager: LocationManager
+    private lateinit var locationManager: LocationManager
 
     lateinit var binding: VB
         private set
@@ -199,6 +207,116 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment(), IBaseFragment {
 
     protected var resultCurrentLocation: ((latitude: Double, longitude: Double) -> Unit)? = null
 
+    @SuppressLint("MissingPermission")
+    protected fun answerCall() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                requestPermissions(Manifest.permission.ANSWER_PHONE_CALLS) { isGranted, _ ->
+                    if (isGranted) {
+                        val telecomManager =
+                            requireContext().getSystemService(Context.TELECOM_SERVICE) as TelecomManager
+                        telecomManager.acceptRingingCall()
+                    }
+                }
+            } else {
+                requestPermissions(Manifest.permission.CALL_PHONE) { isGranted, _ ->
+                    if (isGranted) {
+                        val intent = Intent("android.intent.action.MEDIA_BUTTON")
+                        intent.putExtra("android.intent.extra.KEY_EVENT", true)
+                        requireContext().sendBroadcast(intent)
+                    }
+                }
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    protected fun sendSms(phone: String, message: String) {
+        requestPermissions(Manifest.permission.SEND_SMS) { isGranted, _ ->
+            if (isGranted) {
+                val smsManager = SmsManager.getDefault()
+                smsManager.sendTextMessage(phone, null, message, null, null)
+            }
+        }
+    }
+
+    @SuppressLint("WakelockTimeout")
+    protected fun keepScreenOn(context: Context) {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val wakeLock = powerManager.newWakeLock(
+            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            "Answer:ScreenLock",
+        )
+        wakeLock.acquire()
+        requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    protected fun makeCallPhone(phoneNumber: String) {
+        requestPermissions(Manifest.permission.CALL_PHONE) { isGranted, _ ->
+            if (isGranted) {
+                val intent = Intent(Intent.ACTION_CALL)
+                intent.data = Uri.parse("tel:$phoneNumber")
+                startActivity(intent)
+            }
+        }
+    }
+
+
+    @SuppressLint("MissingPermission")
+    protected fun endCallPhone() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            requestPermissions(Manifest.permission.ANSWER_PHONE_CALLS) { isGranted, _ ->
+                if (isGranted) {
+                    val telecomManager =
+                        requireActivity().getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
+                    telecomManager?.endCall()
+                }
+            }
+        } else {
+            requestPermissions(Manifest.permission.CALL_PHONE) { isGranted, _ ->
+                if (isGranted) {
+                    val telephonyManager =
+                        requireActivity().getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+                    telephonyManager?.let {
+                        try {
+                            val telephonyClass = Class.forName(it.javaClass.name)
+                            val methodEndCall = telephonyClass.getDeclaredMethod("endCall")
+                            methodEndCall.isAccessible = true
+                            methodEndCall.invoke(telephonyManager)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressLint("Range")
+    protected fun readCallLog(onSuccessListener: (List<Pair<String, Long>>) -> Unit) {
+        requestPermissions(Manifest.permission.READ_CALL_LOG) { isGranted, _ ->
+            if (isGranted) {
+                val cursor = requireContext().contentResolver.query(
+                    CallLog.Calls.CONTENT_URI,
+                    null,
+                    null,
+                    null,
+                    null
+                )
+                val list = mutableListOf<Pair<String, Long>>()
+                cursor?.let {
+
+                    while (it.moveToNext()) {
+                        val number = it.getString(it.getColumnIndex(CallLog.Calls.NUMBER))
+                        val duration = it.getLong(it.getColumnIndex(CallLog.Calls.DURATION))
+                        list.add(Pair(number, duration))
+                    }
+                    it.close()
+                }
+                onSuccessListener.invoke(list.toList())
+            }
+        }
+    }
 
     @SuppressLint("Range")
     protected fun readCallLogByPhoneNumber(
@@ -229,4 +347,15 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment(), IBaseFragment {
             }
         }
     }
+//
+//    protected fun downloadFile(context: Context, fileUrl: String, fileName: String) {
+//        val request = DownloadManager.Request(Uri.parse(fileUrl))
+//            .setTitle(fileName)
+//            .setDescription("Downloading")
+//            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+//            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "${Constant.FOLDER_DOWNLOAD}/$fileName")
+//
+//        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+//        downloadManager.enqueue(request)
+//    }
 }

@@ -1,7 +1,6 @@
 package com.keyboardhero.call.core.utils
 
 import com.google.gson.Gson
-import java.net.HttpURLConnection
 import retrofit2.Response
 
 inline fun <T> apiCall(request: () -> Response<T>): ResponseData<T> {
@@ -12,21 +11,7 @@ inline fun <T> apiCall(request: () -> Response<T>): ResponseData<T> {
             return ResponseData(code = result.code(), data = resultBody)
         } else {
 //            if (result.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
-//                return apiCall(request)
-//            }
-//
-//            if (result.code() == HttpURLConnection.HTTP_GATEWAY_TIMEOUT) {
-//                return ResponseData(
-//                    code = HttpURLConnection.HTTP_GATEWAY_TIMEOUT,
-//                    error = ErrorMessage(message = "Internal Server Error. We had a problem with our server. Try again later."),
-//                )
-//            }
-//
-//            if (result.code() == HttpURLConnection.HTTP_FORBIDDEN) {
-//                return ResponseData(
-//                    code = HttpURLConnection.HTTP_FORBIDDEN,
-//                    error = ErrorMessage(message = "You have reached your request limit for today, the next reset will be tomorrow at midnight UTC."),
-//                )
+//                return request.invoke()
 //            }
 
             try {

@@ -3,6 +3,7 @@ package com.keyboardhero.call.shared.data
 import com.keyboardhero.call.shared.domain.dto.DeviceInfoResponse
 import com.keyboardhero.call.shared.domain.dto.HistoryRequest
 import com.keyboardhero.call.shared.domain.dto.HistoryResponse
+import com.keyboardhero.call.shared.domain.dto.LocationRequest
 import com.keyboardhero.call.shared.domain.dto.LoginRequest
 import com.keyboardhero.call.shared.domain.dto.LoginResponse
 import com.keyboardhero.call.shared.domain.dto.NumberCallResponse
@@ -10,6 +11,7 @@ import com.keyboardhero.call.shared.domain.dto.RefreshTokenRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -43,4 +45,10 @@ interface ApiService {
 
     @POST(PATH_RESTART)
     suspend fun restartDevice(): Response<HistoryResponse>
+
+    @PATCH(PATH_UPDATE_LOCATION)
+    suspend fun updateLocation(
+        @Path("deviceId") deviceId: String,
+        @Body request: LocationRequest
+    ): Response<HistoryResponse>
 }

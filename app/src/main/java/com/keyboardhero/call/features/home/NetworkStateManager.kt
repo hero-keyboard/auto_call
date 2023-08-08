@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 object NetworkStateManager {
+    private var isRunning = false
 
     private val _networkStateFlow = MutableStateFlow(true)
 
@@ -27,11 +28,15 @@ object NetworkStateManager {
     }
 
     fun registerNetworkChangeReceiver(context: Context) {
+        isRunning = true
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         context.registerReceiver(networkChangeReceiver, filter)
     }
 
     fun unregisterNetworkChangeReceiver(context: Context) {
-        context.unregisterReceiver(networkChangeReceiver)
+        if (isRunning){
+            context.unregisterReceiver(networkChangeReceiver)
+            isRunning = false
+        }
     }
 }

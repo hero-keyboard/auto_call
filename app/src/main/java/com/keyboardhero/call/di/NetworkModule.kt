@@ -1,5 +1,6 @@
 package com.keyboardhero.call.di
 
+import com.keyboardhero.call.BuildConfig
 import com.keyboardhero.call.NetworkConfig.API_DOMAIN_DEFAULT
 import com.keyboardhero.call.NetworkConfig.NETWORK_CONNECT_TIMEOUT
 import com.keyboardhero.call.NetworkConfig.NETWORK_READ_TIMEOUT
@@ -14,6 +15,7 @@ import javax.inject.Singleton
 import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -32,6 +34,13 @@ class NetworkModule {
 
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(requestInterceptor)
+            .hostnameVerifier { _, _ -> true }.apply {
+                if (BuildConfig.DEBUG) {
+                    val loggingInterceptor = HttpLoggingInterceptor()
+                        .apply { level = HttpLoggingInterceptor.Level.BODY }
+                    addInterceptor(loggingInterceptor)
+                }
+            }
             .addInterceptor(
                 requestInterceptor(
                     appPreference = appPreference

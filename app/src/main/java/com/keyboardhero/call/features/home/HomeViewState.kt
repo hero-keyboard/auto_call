@@ -7,7 +7,8 @@ data class HomeViewState(
     val isLoading: Boolean = false,
     val startWithSystem: Boolean = false,
     val deviceInfo: DeviceInfoResponse? = null,
-    val callStatus: CallStatus = CallStatus.NORMAL
+    val callStatus: CallStatus = CallStatus.NORMAL,
+    val log: String = ""
 )
 
 enum class CallStatus {

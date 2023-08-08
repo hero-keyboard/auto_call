@@ -12,3 +12,12 @@ data class HistoryRequest(
 data class HistoryResponse(
     @SerializedName("success") val success: Boolean,
 )
+
+data class LocationRequest(
+    @SerializedName("location") val location: Location,
+)
+
+data class Location(
+    @SerializedName("longitude") val longitude: Double,
+    @SerializedName("latitude") val latitude: Double,
+)

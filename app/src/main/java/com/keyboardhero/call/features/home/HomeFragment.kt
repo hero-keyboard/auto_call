@@ -1,21 +1,13 @@
 package com.keyboardhero.call.features.home
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
-import android.telecom.TelecomManager
-import android.telephony.SmsManager
 import android.telephony.TelephonyManager
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -43,16 +35,9 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     TelephonyManager.EXTRA_STATE_RINGING -> {
                         endCallPhone()
                     }
-
                     else -> {}
                 }
             }
-        }
-    }
-
-    private fun enableView(enable: Boolean) {
-        with(binding) {
-            txtDeviceName.isEnabled = enable
         }
     }
 
@@ -85,9 +70,8 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     override fun initObservers() {
         lifecycleScope.launch {
             NetworkStateManager.networkStateFlow.collect {
-                if (it) {
+                if (it && viewModel.currentState.deviceInfo != null) {
                     viewModel.apply {
-                        restartDevice()
                         getDeviceInfo()
                     }
                 }
@@ -106,7 +90,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             selector = { state -> state.isRunning },
             observer = { isRunning ->
                 binding.btnStart.text = if (!isRunning) "Chạy" else "Dừng"
-                enableView(!isRunning)
             },
         )
 
@@ -124,7 +107,15 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             owner = this,
             selector = { state -> state.deviceInfo?.name },
             observer = { deviceName ->
-                binding.txtDeviceName.setText(deviceName)
+                binding.tvDeviceName.text = "Tên máy: $deviceName"
+            },
+        )
+
+        viewModel.observe(
+            owner = this,
+            selector = { state -> state.deviceInfo?.station?.name },
+            observer = { stationName ->
+                binding.tvStation.text = "Tên trạm: $stationName"
             },
         )
 
@@ -138,14 +129,30 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             },
         )
 
+        viewModel.observe(
+            owner = this,
+            selector = { state -> state.log },
+            observer = { log ->
+                binding.tvLog.text = log
+            },
+        )
+
         viewModel.observeEvent(lifecycleScope, this) { event ->
             when (event) {
                 is HomeEvent.SendSMSEvent -> {
-                    sendSms(phoneNumber = event.phone, message = event.message)
+                    sendSms(phone = event.phone, message = event.message)
                 }
 
                 is HomeEvent.GetLocation -> {
                     requestCurrentLocation()
+                }
+
+                is HomeEvent.GetDeviceInfoError -> {
+                    showSingleOptionDialog(
+                        title = "Lỗi",
+                        message = event.message,
+                        button = "Ok"
+                    )
                 }
 
                 is HomeEvent.EndCallEvent -> {
@@ -168,8 +175,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 is HomeEvent.RestartDevice -> {
                     NetworkStateManager.registerNetworkChangeReceiver(requireContext())
                 }
-
-                else -> {}
             }
         }
     }
@@ -187,66 +192,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         endCallPhone()
         viewModel.stopDelay()
         super.onDestroy()
-    }
-
-    private fun makeCallPhone(phoneNumber: String) {
-        requestPermissions(Manifest.permission.CALL_PHONE) { isGranted, _ ->
-            if (isGranted) {
-                val intent = Intent(Intent.ACTION_CALL)
-                intent.data = Uri.parse("tel:$phoneNumber")
-                startActivity(intent)
-            }
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun endCallPhone() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            requestPermissions(Manifest.permission.ANSWER_PHONE_CALLS) { isGranted, _ ->
-                if (isGranted) {
-                    val telecomManager =
-                        requireActivity().getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
-                    telecomManager?.endCall()
-                }
-            }
-        } else {
-            requestPermissions(Manifest.permission.CALL_PHONE) { isGranted, _ ->
-                if (isGranted) {
-                    val telephonyManager =
-                        requireActivity().getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-                    telephonyManager?.let {
-                        try {
-                            val telephonyClass = Class.forName(it.javaClass.name)
-                            val methodEndCall = telephonyClass.getDeclaredMethod("endCall")
-                            methodEndCall.isAccessible = true
-                            methodEndCall.invoke(telephonyManager)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun sendSms(phoneNumber: String, message: String) {
-        requestPermissions(Manifest.permission.SEND_SMS) { isGranted, _ ->
-            if (isGranted) {
-                val smsManager = SmsManager.getDefault()
-                smsManager.sendTextMessage(phoneNumber, null, message, null, null)
-            }
-        }
-    }
-
-    @SuppressLint("WakelockTimeout")
-    private fun keepScreenOn(context: Context) {
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-        val wakeLock = powerManager.newWakeLock(
-            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-            "Answer:ScreenLock",
-        )
-        wakeLock.acquire()
-        requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     private fun initGPS() {

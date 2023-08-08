@@ -4,9 +4,9 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import androidx.annotation.RequiresApi
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.keyboardhero.call.core.base.BaseActivity
 import com.keyboardhero.call.databinding.ActivitySplashBinding
@@ -14,7 +14,6 @@ import com.keyboardhero.call.features.MainActivity
 import com.keyboardhero.call.shared.data.AppPreference
 import com.keyboardhero.call.shared.domain.ActiveDeviceUseCase
 import com.keyboardhero.call.shared.domain.RefreshTokenUseCase
-import com.keyboardhero.call.shared.domain.RestartStatusDeviceUseCase
 import com.keyboardhero.call.shared.domain.data
 import com.keyboardhero.call.shared.domain.succeeded
 import dagger.hilt.android.AndroidEntryPoint
@@ -43,7 +42,9 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
         binding.btnStart.setOnClickListener {
             val code = binding.txtActiveCode.text.toString().trim()
             lifecycleScope.launch {
+                showLoading()
                 val result = activeDeviceUseCase(ActiveDeviceUseCase.Parameter(code))
+                hideLoading()
                 val data = result.data?.data
                 if (result.succeeded && data != null) {
                     appReference.accessToken = data.accessToken ?: ""
@@ -60,6 +61,14 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
         }
     }
 
+    private fun showLoading() {
+        binding.loadingView.root.isVisible = true
+    }
+
+    private fun hideLoading() {
+        binding.loadingView.root.isVisible = false
+    }
+
     override fun onResume() {
         super.onResume()
         refreshToken()
@@ -67,8 +76,15 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>() {
 
     private fun refreshToken() {
         lifecycleScope.launch {
+            showLoading()
+            binding.layoutContainer.isVisible = false
             val result = refreshTokenUseCase(Unit)
-            if (result.data == true) openApp()
+            hideLoading()
+            if (result.data == true) {
+                openApp()
+            } else {
+                binding.layoutContainer.isVisible = true
+            }
         }
     }
 
