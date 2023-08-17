@@ -14,7 +14,7 @@ android {
     defaultConfig {
         applicationId "com.keyboardhero.call"
         versionCode 1
-        versionName "0.2.0"
+        versionName "0.2.1"
         setProperty("archivesBaseName", "auto-call-$versionName")
     }
 
