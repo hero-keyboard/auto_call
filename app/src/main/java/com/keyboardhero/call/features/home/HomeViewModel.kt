@@ -30,6 +30,8 @@ class HomeViewModel @Inject constructor(
 
     override fun initState(): HomeViewState = HomeViewState()
     private var job: Job? = null
+    private var oldHistoryPhoneNumber = ""
+    private var oldHistoryDuration = 0L
     private var jobTime: Job? = null
     private suspend fun getPhoneNumber(): NumberCallResponse? {
         return getPhoneNumberUseCase(Unit).data
@@ -98,10 +100,15 @@ class HomeViewModel @Inject constructor(
             if (result.succeeded && data != null) {
                 appPreference.deviceID = data.Id ?: ""
                 if (data.status != "running") {
-                    if (restartDevice()) {
-                        delay(2000)
-                        getDeviceInfo()
+                    if (oldHistoryDuration != 0L && oldHistoryPhoneNumber.isNotEmpty()) {
+                        updateCallHistory(oldHistoryPhoneNumber, oldHistoryDuration)
+                        oldHistoryDuration = 0L
+                        oldHistoryPhoneNumber = ""
+                    } else {
+                        restartDevice()
                     }
+                    delay(5000)
+                    getDeviceInfo()
                 } else {
                     dispatchState(currentState.copy(deviceInfo = data))
                 }
@@ -124,6 +131,8 @@ class HomeViewModel @Inject constructor(
             )
 
             if (result.data == false) {
+                oldHistoryPhoneNumber = phoneNumber
+                oldHistoryDuration = duration
                 dispatchEvent(HomeEvent.RestartDevice)
             }
         }

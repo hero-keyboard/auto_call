@@ -38,6 +38,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                         endCallPhone()
                     }
 
+                    TelephonyManager.EXTRA_STATE_IDLE ->{
+                        isCallOf = true
+                    }
+
                     TelephonyManager.EXTRA_STATE_OFFHOOK -> {
                         isCallOf = true
                     }
