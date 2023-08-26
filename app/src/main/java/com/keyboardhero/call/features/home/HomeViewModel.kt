@@ -97,7 +97,7 @@ class HomeViewModel @Inject constructor(
             val data = result.data?.data
             if (result.succeeded && data != null) {
                 appPreference.deviceID = data.Id ?: ""
-                if (data.status == "offline") {
+                if (data.status != "running") {
                     if (restartDevice()) {
                         delay(2000)
                         getDeviceInfo()
