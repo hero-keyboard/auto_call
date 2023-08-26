@@ -8,6 +8,7 @@ data class HomeViewState(
     val startWithSystem: Boolean = false,
     val deviceInfo: DeviceInfoResponse? = null,
     val callStatus: CallStatus = CallStatus.NORMAL,
+    val isCallOf: Boolean = false,
     val log: String = ""
 )
 

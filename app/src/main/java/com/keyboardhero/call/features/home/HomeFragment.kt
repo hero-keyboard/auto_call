@@ -15,6 +15,7 @@ import com.keyboardhero.call.core.base.BaseFragment
 import com.keyboardhero.call.databinding.FragmentHomeBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlin.math.log
 
 @AndroidEntryPoint
 class HomeFragment : BaseFragment<FragmentHomeBinding>() {
@@ -24,6 +25,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
     private val callStateSubscribe = CallStateSubscribe.getCallEvents()
     private val viewModel: HomeViewModel by viewModels()
+    private var isCallOf = false;
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -34,6 +36,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 when (it) {
                     TelephonyManager.EXTRA_STATE_RINGING -> {
                         endCallPhone()
+                    }
+
+                    TelephonyManager.EXTRA_STATE_OFFHOOK -> {
+                        isCallOf = true
                     }
                     else -> {}
                 }
@@ -162,6 +168,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
                 is HomeEvent.CallEvent -> {
                     Log.i("AAA", "makeCallPhone: ${event.phone}")
+                    isCallOf = false
                     makeCallPhone(event.phone)
                 }
 
@@ -182,7 +189,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     override fun onResume() {
         super.onResume()
         requestCurrentLocation()
-        if (viewModel.currentState.callStatus == CallStatus.CALLING) {
+        if (viewModel.currentState.callStatus == CallStatus.CALLING && isCallOf) {
             endCallPhone()
             viewModel.stopDelay()
         }

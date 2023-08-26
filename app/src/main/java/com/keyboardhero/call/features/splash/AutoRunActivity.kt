@@ -11,9 +11,9 @@ import com.keyboardhero.call.features.MainActivity
 import com.keyboardhero.call.shared.domain.RefreshTokenUseCase
 import com.keyboardhero.call.shared.domain.data
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @SuppressLint("CustomSplashScreen")
 @AndroidEntryPoint
@@ -24,21 +24,31 @@ class AutoRunActivity : BaseActivity<ActivityAutoRunBinding>() {
     @Inject
     lateinit var refreshTokenUseCase: RefreshTokenUseCase
 
+    private var isLogin = false
+
+    private var retryCount = 5;
+
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch {
-            while (true) {
-                delay(2000)
+            while (!isLogin && retryCount > 0) {
+                delay(3000)
                 if (this@AutoRunActivity.isConnectedToNetwork()) {
-                    refreshToken()
+                    isLogin = refreshToken() ?: false
+                    retryCount--
                 }
+            }
+            if (isLogin) {
+                openApp()
+            } else {
+                openLoginScreen()
             }
         }
     }
 
-    private suspend fun refreshToken() {
+    private suspend fun refreshToken(): Boolean? {
         val result = refreshTokenUseCase(Unit)
-        if (result.data == true) openApp() else openLoginScreen()
+        return result.data
     }
 
     private fun openLoginScreen() {

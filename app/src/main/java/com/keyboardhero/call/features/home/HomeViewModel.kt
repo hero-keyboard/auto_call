@@ -50,39 +50,42 @@ class HomeViewModel @Inject constructor(
             dispatchState(currentState.copy(isRunning = true))
             updateLog("Bắt Đầu")
             resetStartWithSystem()
-            while (currentState.isRunning && currentState.callStatus == CallStatus.NORMAL) {
-                val phoneNumberData = getPhoneNumber()
-                if (phoneNumberData?.phoneNumber != null && phoneNumberData.delay != null && phoneNumberData.duration != null) {
-                    updateLog("Gọi: ${phoneNumberData.phoneNumber} thời lượng ${phoneNumberData.duration}")
-                    dispatchEvent(HomeEvent.CallEvent(phone = phoneNumberData.phoneNumber))
-                    dispatchState(currentState.copy(callStatus = CallStatus.CALLING))
-                    jobTime = timeTicker(
-                        duration = 10 + phoneNumberData.duration + phoneNumberData.delay,
-                        period = 1
-                    ).onEach {
-                        if (it == phoneNumberData.delay) {
-                            dispatchState(currentState.copy(callStatus = CallStatus.DELAY))
-                            dispatchEvent(HomeEvent.EndCallEvent)
-                            updateLog("Gọi xong, đang delay")
-                        }
+            while (currentState.isRunning) {
+                if (currentState.callStatus == CallStatus.NORMAL) {
+                    val phoneNumberData = getPhoneNumber()
+                    if (phoneNumberData?.phoneNumber != null && phoneNumberData.delay != null && phoneNumberData.duration != null) {
+                        updateLog("Gọi: ${phoneNumberData.phoneNumber} thời lượng ${phoneNumberData.duration}")
+                        dispatchEvent(HomeEvent.CallEvent(phone = phoneNumberData.phoneNumber))
+                        dispatchState(currentState.copy(callStatus = CallStatus.CALLING))
+                        jobTime = timeTicker(
+                            duration = 10 + phoneNumberData.duration + phoneNumberData.delay,
+                            period = 1
+                        ).onEach {
+                            if (it == phoneNumberData.delay) {
+                                dispatchState(currentState.copy(callStatus = CallStatus.DELAY))
+                                dispatchEvent(HomeEvent.EndCallEvent)
+                                updateLog("Gọi xong, đang delay")
+                            }
 
-                        if (it == phoneNumberData.delay - 5) {
-                            dispatchEvent(HomeEvent.GetLocation)
-                            dispatchEvent(HomeEvent.GetHistory(phoneNumberData.phoneNumber))
-                        }
-                    }.onCompletion {
-                        if (it != null) {
-                            updateLog("Cuộc gọi bị kết thúc sớm.")
-                            dispatchState(currentState.copy(callStatus = CallStatus.NORMAL))
-                        } else {
-                            updateLog("Xong")
-                            dispatchState(currentState.copy(callStatus = CallStatus.NORMAL))
-                        }
-                    }.launchIn(this)
-                } else {
-                    updateLog("Lấy số điện thoại thất bại.")
+                            if (it == phoneNumberData.delay - 5) {
+                                dispatchEvent(HomeEvent.GetLocation)
+                                dispatchEvent(HomeEvent.GetHistory(phoneNumberData.phoneNumber))
+                            }
+                        }.onCompletion {
+                            if (it != null) {
+                                updateLog("Cuộc gọi bị kết thúc sớm.")
+                                dispatchState(currentState.copy(callStatus = CallStatus.NORMAL))
+                                dispatchEvent(HomeEvent.GetHistory(phoneNumberData.phoneNumber))
+                            } else {
+                                updateLog("Xong")
+                                dispatchState(currentState.copy(callStatus = CallStatus.NORMAL))
+                            }
+                        }.launchIn(this)
+                    } else {
+                        updateLog("Lấy số điện thoại thất bại.")
+                    }
                 }
-                delay(2000)
+                delay(3000)
             }
         }
     }
